@@ -17,6 +17,7 @@ namespace CVRP_project.Algorithms
         protected readonly double Beta;
         protected readonly double Evaporation;
         protected readonly double PheromoneStrength;
+        protected readonly double OverLimitPenaltyFactor; // kara za zbyt dużą liczbę ciężarówek
 
         protected List<int> GlobalBestRoute = new List<int>();
         protected double GlobalBestRouteLength = double.MaxValue;
@@ -24,7 +25,7 @@ namespace CVRP_project.Algorithms
         protected List<int> LocalBestRoute = new List<int>();
         protected double LocalBestRouteLength = double.MaxValue;
 
-        public BasicAntAlgorithm(ProblemInstance cities, int iterationsCount, int antsCount, double alpha, double beta, double evaporation, double pheromoneStrength)
+        public BasicAntAlgorithm(ProblemInstance cities, int iterationsCount, int antsCount, double alpha, double beta, double evaporation, double pheromoneStrength, double overLimitPenaltyFactor)
         {
             this.Cities = cities;
             IterationsCount = iterationsCount;
@@ -42,6 +43,7 @@ namespace CVRP_project.Algorithms
             Beta = beta;
             Evaporation = evaporation;
             PheromoneStrength = pheromoneStrength;
+            OverLimitPenaltyFactor = overLimitPenaltyFactor;
 
             RandomGenerator = new Random();
         }
@@ -81,8 +83,6 @@ namespace CVRP_project.Algorithms
                 UpdateGlobalBestRoute(LocalBestRoute, LocalBestRouteLength);
 
                 UpdatePheromone();
-
-
             }
 
             return (GlobalBestRoute, GlobalBestRouteLength);
@@ -100,15 +100,17 @@ namespace CVRP_project.Algorithms
             {
                 int lastCity = ant.GetLastCity();
 
-                if (lastCity == -1)
-                    return;
-
                 int nextCity = ChooseNextCity(ant, lastCity);
 
                 if (nextCity == -1) // nie znaleziono żadnego miasta
                     break;
 
                 ant.Visit(nextCity);
+            }
+
+            if(!ant.RouteFinished())
+            {
+                ant.InvalidateResult();
             }
         }
 
@@ -192,13 +194,18 @@ namespace CVRP_project.Algorithms
         {
             foreach (Ant ant in Ants)
             {
-                // TODO: daj feromon tylko jak dobra trasa?
+                double pheromoneFactor = 1.0;
+                if(!ant.WithinTrucksLimit())
+                {
+                    pheromoneFactor = OverLimitPenaltyFactor;
+                }
 
                 int lastCity = BaseStation;
 
                 foreach (int city in ant.GetRoute())
                 {
                     double newPheromone = Cities.GetPheromone(lastCity, city) + (PheromoneStrength / ant.GetRouteLength());
+                    newPheromone *= pheromoneFactor;
                     Cities.SetPheromone(lastCity, city, newPheromone);
                     Cities.SetPheromone(city, lastCity, newPheromone);
                 }

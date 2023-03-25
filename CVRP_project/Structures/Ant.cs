@@ -80,6 +80,11 @@
 
         public int GetLastCity() => Route.Count > 0 ? Route.Last() : -1;
 
+        public void InvalidateResult() // kara za nieznalezienie rozwiązania
+        {
+            RouteLength = double.MaxValue;
+        }
+
         public static void Initialize(ProblemInstance cities, int baseStation = 0)
         {
             Cities = cities;

@@ -19,6 +19,7 @@ namespace CVRP_project
             double beta = 5;
             double evaporation = 0.5;
             double pheromoneStrength = 1;
+            double overLimitPenaltyFactor = 0.1;
 
             int elitistAntsCount = 10;
             int rankingSize = antsCount / 3;
@@ -28,23 +29,22 @@ namespace CVRP_project
 
 
             IAlgorithm[] algorithms = {
-            new BasicAntAlgorithm(cities, iterationsCount, antsCount, alpha, beta, evaporation, pheromoneStrength),
-            new GreedyAntAlgorithm(cities, iterationsCount, antsCount),
-            new ElitistAntAlgorithm(cities, iterationsCount, antsCount, alpha, beta, evaporation, pheromoneStrength, elitistAntsCount),
-            new RankedAntAlgorithm(cities, iterationsCount, antsCount, alpha, beta, evaporation, pheromoneStrength, rankingSize)
+            new BasicAntAlgorithm(cities, iterationsCount, antsCount, alpha, beta, evaporation, pheromoneStrength, overLimitPenaltyFactor),
+            new GreedyAntAlgorithm(cities, iterationsCount, antsCount, overLimitPenaltyFactor),
+            new ElitistAntAlgorithm(cities, iterationsCount, antsCount, alpha, beta, evaporation, pheromoneStrength, overLimitPenaltyFactor, elitistAntsCount),
+            new RankedAntAlgorithm(cities, iterationsCount, antsCount, alpha, beta, evaporation, pheromoneStrength, overLimitPenaltyFactor, rankingSize)
             };
 
             StreamWriter writer = new StreamWriter("output.txt");
 
-            writer.WriteLine($"Algorytmy mrówkowe, liczba powtórzeń: {repetitions}, liczba iteracji: {iterationsCount}\n");
-            Console.WriteLine($"Algorytmy mrówkowe, liczba powtórzeń: {repetitions}, liczba iteracji: {iterationsCount}\n");
+            writer.WriteLine($"Algorytmy mrówkowe, rozmiar: {cities.Size}, liczba powtórzeń: {repetitions}, liczba iteracji: {iterationsCount}\n");
+            Console.WriteLine($"Algorytmy mrówkowe, rozmiar: {cities.Size}, liczba powtórzeń: {repetitions}, liczba iteracji: {iterationsCount}\n");
 
             Parallel.ForEach(algorithms, algorithm =>
             {
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
                 var result = RunAlgorithm(algorithm, repetitions, seed);
-                // TODO: odchylenie standardowe?
 
                 stopwatch.Stop();
 

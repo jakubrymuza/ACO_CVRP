@@ -6,7 +6,7 @@ namespace CVRP_project.Algorithms
     {
         private int RankingSize;
 
-        public RankedAntAlgorithm(ProblemInstance cities, int iterationsCount, int antsCount, double alpha, double beta, double evaporation, double pheromoneStrength, int rankingSize) : base(cities, iterationsCount, antsCount, alpha, beta, evaporation, pheromoneStrength)
+        public RankedAntAlgorithm(ProblemInstance cities, int iterationsCount, int antsCount, double alpha, double beta, double evaporation, double pheromoneStrength, double overLimitPenaltyFactor, int rankingSize) : base(cities, iterationsCount, antsCount, alpha, beta, evaporation, pheromoneStrength, overLimitPenaltyFactor)
         {
             RankingSize = rankingSize;
         }
