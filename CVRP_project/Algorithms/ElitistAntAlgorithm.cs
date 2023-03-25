@@ -10,11 +10,20 @@ namespace CVRP_project.Algorithms
             ElitistAntsCount = elitistAntsCount;
         }
 
-        public new String Name() => "Elitist Ant Algorithm";
+        public override String Name() => "Elitist Ant Algorithm";
 
-        protected new void PostAddNewPheromone()
+        protected override void PostAddNewPheromone()
         {
-            // TODO
+            int lastCity = BaseStation;
+
+            foreach (int city in LocalBestRoute)
+            {
+                double newPheromone = Cities.GetPheromone(lastCity, city) + (PheromoneStrength / LocalBestRouteLength);
+                newPheromone *= ElitistAntsCount;
+
+                Cities.SetPheromone(lastCity, city, newPheromone);
+                Cities.SetPheromone(city, lastCity, newPheromone);
+            }
         }
     }
 }

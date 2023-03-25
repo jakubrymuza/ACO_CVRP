@@ -8,6 +8,6 @@ namespace CVRP_project.Algorithms
         public GreedyAntAlgorithm(ProblemInstance cities, int iterationsCount, int antsCount) : base(cities, iterationsCount, antsCount, 0, 1, 0, 0)
         { }
 
-        public new String Name() => "Greedy Ant Algorithm";
+        public override String Name() => "Greedy Ant Algorithm";
     }
 }

@@ -20,7 +20,7 @@
         public bool CanVisit(int city)
         {
             // nie można odwiedzić jeszcze raz miasta w którym już się jest
-            if (city == Route.Last())
+            if (city == GetLastCity())
                 return false;
 
             // zawsze można wrócić do stacji bazowej
@@ -32,7 +32,7 @@
             // oraz odległość do x i z x do stacji bazowej jest mnieszy od pozostałego sMax
             return !Visited[city] &&
                 CapacityLeft >= Cities.GetDemand(city) &&
-                DistanceLeft >= Cities.GetDistance(Route.Last(), city) + Cities.GetDistance(city, BaseStation);
+                DistanceLeft >= Cities.GetDistance(GetLastCity(), city) + Cities.GetDistance(city, BaseStation);
         }
 
 
@@ -41,21 +41,26 @@
             if(Route.Count == 0)
             {
                 Route.Add(city);
+                Visited[city] = true;
+                VisitedCount++;
+                return;
             }
 
-            int lastCity = Route.Last();
+            int lastCity = GetLastCity();
             RouteLength += Cities.GetDistance(lastCity, city);
 
             if (city == BaseStation)
             {
                 CapacityLeft = Cities.Capacity;
                 DistanceLeft = Cities.MaxDistance;
+                Visited[city] = true;
                 TrucksUsed++;
             }
             else
             {
                 CapacityLeft -= Cities.GetDemand(city);
-                DistanceLeft -= Cities.GetDistance(Route.Last(), city);
+                DistanceLeft -= Cities.GetDistance(GetLastCity(), city);
+                Visited[city] = true;
                 VisitedCount++;
             }
 
@@ -69,9 +74,11 @@
 
         public double GetRouteLength() => RouteLength;
 
-        public bool RouteFinished() => Route.Last() == BaseStation && VisitedCount == Cities.Size;
+        public bool RouteFinished() => GetLastCity() == BaseStation && VisitedCount == Cities.Size;
 
         public bool WithinTrucksLimit() => TrucksUsed <= Cities.TrucksLimit;
+
+        public int GetLastCity() => Route.Count > 0 ? Route.Last() : -1;
 
         public static void Initialize(ProblemInstance cities, int baseStation = 0)
         {
@@ -89,7 +96,7 @@
             RouteLength = 0;
 
             Array.Fill(Visited, false);
-            VisitedCount = 1;
+            VisitedCount = 0;
         }
 
         public Ant()

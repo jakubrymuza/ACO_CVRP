@@ -4,22 +4,25 @@ namespace CVRP_project.Algorithms
 {
     internal class BasicAntAlgorithm : IAlgorithm
     {
-        protected ProblemInstance Cities;
+        protected readonly ProblemInstance Cities;
         protected readonly int BaseStation = 0;
 
         protected Random RandomGenerator;
-        protected int IterationsCount;
+        protected readonly int IterationsCount;
 
-        protected Ant[] Ants;
+        protected readonly Ant[] Ants;
 
 
-        protected double Alpha;
-        protected double Beta;
-        protected double Evaporation;
-        protected double PheromoneStrength;
+        protected readonly double Alpha;
+        protected readonly double Beta;
+        protected readonly double Evaporation;
+        protected readonly double PheromoneStrength;
 
-        private List<int> GlobalBestRoute = new List<int>();
-        private double GlobalBestRouteLength = double.MaxValue;
+        protected List<int> GlobalBestRoute = new List<int>();
+        protected double GlobalBestRouteLength = double.MaxValue;
+
+        protected List<int> LocalBestRoute = new List<int>();
+        protected double LocalBestRouteLength = double.MaxValue;
 
         public BasicAntAlgorithm(ProblemInstance cities, int iterationsCount, int antsCount, double alpha, double beta, double evaporation, double pheromoneStrength)
         {
@@ -47,9 +50,12 @@ namespace CVRP_project.Algorithms
         {
             GlobalBestRoute = new List<int>();
             GlobalBestRouteLength = double.MaxValue;
-        }
 
-        public String Name() => "Basic Ant Algorithm";
+            LocalBestRoute = new List<int>();
+            LocalBestRouteLength = double.MaxValue;
+    }
+
+        public virtual String Name() => "Basic Ant Algorithm";
 
 
         public (List<int> route, double routeLength) Solve(int seed)
@@ -63,19 +69,20 @@ namespace CVRP_project.Algorithms
                 ResetAnts();
 
                 // najlepsza ścieżka w danej iteracji
-                List<int> LocalBestRoute = new List<int>();
-                double LocalBestRouteLength = double.MaxValue;
+                
 
                 for (int j = 0; j < Ants.Length; j++)
                 {
                     SolveAnt(Ants[j]);
-
-                    UpdateLocalBestRoute(ref LocalBestRoute, ref LocalBestRouteLength, Ants[j]);
                 }
+
+                UpdateLocalBestRoute(ref LocalBestRoute, ref LocalBestRouteLength, Ants);
+
+                UpdateGlobalBestRoute(LocalBestRoute, LocalBestRouteLength);
 
                 UpdatePheromone();
 
-                UpdateGlobalBestRoute(LocalBestRoute, LocalBestRouteLength);
+                
             }
 
             return (GlobalBestRoute, GlobalBestRouteLength);
@@ -91,10 +98,14 @@ namespace CVRP_project.Algorithms
 
             while (!ant.RouteFinished()) // TODO: check if surpassed trucks limit?
             {
-                int lastCity = 0;
+                int lastCity = ant.GetLastCity();
+
+                if (lastCity == -1)
+                    return;
+
                 int nextCity = ChooseNextCity(ant, lastCity);
 
-                if (nextCity == -1)
+                if (nextCity == -1) // nie znaleziono żadnego miasta
                     break;
 
                 ant.Visit(nextCity);
@@ -177,7 +188,7 @@ namespace CVRP_project.Algorithms
             }
         }
 
-        protected void AddNewPheromone()
+        protected virtual void AddNewPheromone()
         {
             foreach (Ant ant in Ants)
             {
@@ -196,7 +207,7 @@ namespace CVRP_project.Algorithms
             PostAddNewPheromone();
         }
 
-        protected void PostAddNewPheromone() { } // placeholder for modifications
+        protected virtual void PostAddNewPheromone() { } // placeholder for modifications
 
         private void ResetAnts()
         {
@@ -206,16 +217,20 @@ namespace CVRP_project.Algorithms
             }
         }
 
-        private void UpdateLocalBestRoute(ref List<int> LocalBestRoute, ref double LocalBestRouteLength, Ant ant)
+        private void UpdateLocalBestRoute(ref List<int> LocalBestRoute, ref double LocalBestRouteLength, Ant[] ants)
         {
-            if (ant.RouteFinished() && ant.WithinTrucksLimit())
+            foreach(Ant ant in ants)
             {
-                if (ant.GetRouteLength() < LocalBestRouteLength)
+                if (ant.RouteFinished() && ant.WithinTrucksLimit())
                 {
-                    LocalBestRoute = ant.GetRoute();
-                    LocalBestRouteLength = ant.GetRouteLength();
+                    if (ant.GetRouteLength() < LocalBestRouteLength)
+                    {
+                        LocalBestRoute = ant.GetRoute();
+                        LocalBestRouteLength = ant.GetRouteLength();
+                    }
                 }
             }
+
         }
 
         private void UpdateGlobalBestRoute(List<int> LocalBestRoute, double LocalBestRouteLength)

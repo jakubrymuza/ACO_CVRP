@@ -11,11 +11,35 @@ namespace CVRP_project.Algorithms
             RankingSize = rankingSize;
         }
 
-        public new String Name() => "Greedy Ant Algorithm";
+        public override String Name() => "Ranked Ant Algorithm";
 
-        protected new void AddNewPheromone()
+        protected override void AddNewPheromone()
         {
-            // TODO
+            var comparer = new AntSolutionComparer<Ant>();
+            Array.Sort(Ants, comparer);
+
+            for(int rank = 0; rank < RankingSize; rank++)
+            {
+                // TODO: daj feromon tylko jak dobra trasa?
+
+                int lastCity = BaseStation;
+
+                foreach (int city in Ants[rank].GetRoute())
+                {
+                    double newPheromone = Cities.GetPheromone(lastCity, city) + (PheromoneStrength / Ants[rank].GetRouteLength());
+                    newPheromone *= (RankingSize - rank);
+
+                    Cities.SetPheromone(lastCity, city, newPheromone);
+                    Cities.SetPheromone(city, lastCity, newPheromone);
+                }
+            }
+
+            PostAddNewPheromone();
+        }
+
+        private class AntSolutionComparer<T> : IComparer<Ant>
+        {
+            public int Compare(Ant? x, Ant? y) => x!.GetRouteLength().CompareTo(y!.GetRouteLength()); 
         }
     }
 }

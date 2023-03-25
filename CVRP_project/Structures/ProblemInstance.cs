@@ -28,7 +28,7 @@
             {
                 for (int j = 0; j < Size; j++)
                 {
-                    PheromoneMatrix[i, j] = 0;
+                    PheromoneMatrix[i, j] = 1.0;
                 }
             }
         }
