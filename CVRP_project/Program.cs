@@ -1,5 +1,6 @@
 ﻿using CVRP_project.Algorithms;
 using CVRP_project.Structures;
+using System.Diagnostics;
 
 namespace CVRP_project
 {
@@ -22,7 +23,7 @@ namespace CVRP_project
             int elitistAntsCount = 10;
             int rankingSize = antsCount / 3;
 
-            int repetitions = 10;
+            int repetitions = 5;
             int seed = 100;
 
 
@@ -35,21 +36,43 @@ namespace CVRP_project
 
             StreamWriter writer = new StreamWriter("output.txt");
 
-            foreach (var algorithm in algorithms)
+            writer.WriteLine($"Algorytmy mrówkowe, liczba powtórzeń: {repetitions}, liczba iteracji: {iterationsCount}\n");
+            Console.WriteLine($"Algorytmy mrówkowe, liczba powtórzeń: {repetitions}, liczba iteracji: {iterationsCount}\n");
+
+            Parallel.ForEach(algorithms, algorithm =>
             {
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
                 var result = RunAlgorithm(algorithm, repetitions, seed);
                 // TODO: odchylenie standardowe?
 
-                PrintResults(writer, result, algorithm.Name());
-                PrintResults(Console.Out, result, algorithm.Name());
-            }
+                stopwatch.Stop();
+
+                lock (writer)
+                {
+                    PrintResults(writer, result, algorithm.Name(), stopwatch.ElapsedMilliseconds / repetitions);
+                    PrintResults(Console.Out, result, algorithm.Name(), stopwatch.ElapsedMilliseconds / repetitions);
+                }
+            });
 
             writer.Flush();
+
+            Console.WriteLine("Enter any key to continue");
+            Console.ReadKey();
         }
 
-        private static void PrintResults(TextWriter writer, (double bestLength, double worstLength, double averageLength) value, string name)
+        private static void PrintResults(TextWriter writer, (double bestLength, double worstLength, double averageLength) value, string name, long msTime)
         {
             writer.WriteLine($"{name}:");
+            writer.WriteLine($"średni czas wykonania jednego powtórzenia algorytmu: {msTime / 1000.0}s");
+
+            if(value.bestLength == double.MaxValue)
+            {
+                writer.WriteLine("nie znaleziono poprawnego rozwiązania");
+                return;
+            }
+
+
             writer.WriteLine($"best length: {value.bestLength}");
             writer.WriteLine($"worst length: {value.worstLength}");
             writer.WriteLine($"average length: {value.averageLength}");
@@ -65,7 +88,10 @@ namespace CVRP_project
             for (int i = 0; i < repetitions; i++)
             {
                 algorithm.Reset();
-                (_, double length) = algorithm.Solve(seed);
+                (_, double length) = algorithm.Solve(i * seed);
+
+                if (length == double.MaxValue)
+                    continue;
 
                 if (bestLength > length)
                 {
