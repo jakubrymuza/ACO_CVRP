@@ -18,7 +18,7 @@ namespace CVRP_project.Algorithms
             var comparer = new AntSolutionComparer<Ant>();
             Array.Sort(Ants, comparer);
 
-            for(int rank = 0; rank < RankingSize; rank++)
+            for (int rank = 0; rank < RankingSize; rank++)
             {
                 // TODO: daj feromon tylko jak dobra trasa?
 
@@ -39,7 +39,7 @@ namespace CVRP_project.Algorithms
 
         private class AntSolutionComparer<T> : IComparer<Ant>
         {
-            public int Compare(Ant? x, Ant? y) => x!.GetRouteLength().CompareTo(y!.GetRouteLength()); 
+            public int Compare(Ant? x, Ant? y) => x!.GetRouteLength().CompareTo(y!.GetRouteLength());
         }
     }
 }

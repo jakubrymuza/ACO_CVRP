@@ -38,7 +38,7 @@
 
         public void Visit(int city)
         {
-            if(Route.Count == 0)
+            if (Route.Count == 0)
             {
                 Route.Add(city);
                 Visited[city] = true;
@@ -70,7 +70,7 @@
 
 
 
-        public List<int> GetRoute() => Route; 
+        public List<int> GetRoute() => Route;
 
         public double GetRouteLength() => RouteLength;
 

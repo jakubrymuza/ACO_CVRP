@@ -36,7 +36,7 @@ namespace CVRP_project.Algorithms
             {
                 Ants[i] = new Ant();
             }
-            
+
 
             Alpha = alpha;
             Beta = beta;
@@ -53,7 +53,7 @@ namespace CVRP_project.Algorithms
 
             LocalBestRoute = new List<int>();
             LocalBestRouteLength = double.MaxValue;
-    }
+        }
 
         public virtual String Name() => "Basic Ant Algorithm";
 
@@ -69,7 +69,7 @@ namespace CVRP_project.Algorithms
                 ResetAnts();
 
                 // najlepsza ścieżka w danej iteracji
-                
+
 
                 for (int j = 0; j < Ants.Length; j++)
                 {
@@ -82,7 +82,7 @@ namespace CVRP_project.Algorithms
 
                 UpdatePheromone();
 
-                
+
             }
 
             return (GlobalBestRoute, GlobalBestRouteLength);
@@ -219,7 +219,7 @@ namespace CVRP_project.Algorithms
 
         private void UpdateLocalBestRoute(ref List<int> LocalBestRoute, ref double LocalBestRouteLength, Ant[] ants)
         {
-            foreach(Ant ant in ants)
+            foreach (Ant ant in ants)
             {
                 if (ant.RouteFinished() && ant.WithinTrucksLimit())
                 {
