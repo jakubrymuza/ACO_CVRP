@@ -61,34 +61,38 @@ namespace CVRP_project
             Console.ReadKey();
         }
 
-        private static void PrintResults(TextWriter writer, (double bestLength, double worstLength, double averageLength) value, string name, long msTime)
+        private static void PrintResults(TextWriter writer, (double bestLength, double worstLength, double averageLength, double deviation) value, string name, long msTime)
         {
             writer.WriteLine($"{name}:");
             writer.WriteLine($"średni czas wykonania jednego powtórzenia algorytmu: {msTime / 1000.0}s");
 
-            if(value.bestLength == double.MaxValue)
+            if (value.bestLength == double.MaxValue)
             {
                 writer.WriteLine("nie znaleziono poprawnego rozwiązania");
                 return;
             }
 
 
-            writer.WriteLine($"best length: {value.bestLength}");
-            writer.WriteLine($"worst length: {value.worstLength}");
-            writer.WriteLine($"average length: {value.averageLength}");
+            writer.WriteLine($"najlepszy wynik: {value.bestLength}");
+            writer.WriteLine($"najgorszy wynik: {value.worstLength}");
+            writer.WriteLine($"średni wynik: {value.averageLength}");
+            writer.WriteLine($"odchylenie standardowe: {value.deviation}");
             writer.WriteLine();
         }
 
-        private static (double bestLength, double worstLength, double averageLength) RunAlgorithm(IAlgorithm algorithm, int repetitions, int seed)
+        private static (double bestLength, double worstLength, double averageLength, double deviation) RunAlgorithm(IAlgorithm algorithm, int repetitions, int seed)
         {
             double bestLength = double.MaxValue;
             double worstLength = double.MinValue;
             double averageLength = 0;
 
+            double[] results = new double[repetitions];
+
             for (int i = 0; i < repetitions; i++)
             {
                 algorithm.Reset();
                 (_, double length) = algorithm.Solve(i * seed);
+                results[i] = length;
 
                 if (length == double.MaxValue)
                     continue;
@@ -108,7 +112,23 @@ namespace CVRP_project
 
             averageLength /= repetitions;
 
-            return (bestLength, worstLength, averageLength);
+            double deviation = CalculateDeviation(results, averageLength);
+
+            return (bestLength, worstLength, averageLength, deviation);
+        }
+
+        private static double CalculateDeviation(double[] results, double average)
+        {
+            double deviation = 0.0;
+
+            foreach (double value in results)
+            {
+                deviation += Math.Pow(value - average, 2);
+            }
+
+            deviation /= results.Length;
+
+            return Math.Sqrt(deviation);
         }
     }
 }
