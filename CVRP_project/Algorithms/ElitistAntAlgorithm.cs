@@ -14,15 +14,22 @@ namespace CVRP_project.Algorithms
 
         protected override void PostAddNewPheromone()
         {
-            int lastCity = BaseStation;
+            var route = GlobalBestRoute;
 
-            foreach (int city in LocalBestRoute)
+            for (int i = 1; i < route.Count; ++i)
             {
-                double newPheromone = Cities.GetPheromone(lastCity, city) + (PheromoneStrength / LocalBestRouteLength);
-                newPheromone *= ElitistAntsCount;
+                int lastCity = route[i - 1];
+                int city = route[i];
 
-                Cities.SetPheromone(lastCity, city, newPheromone);
-                Cities.SetPheromone(city, lastCity, newPheromone);
+                double newPheromone = ElitistAntsCount * (PheromoneStrength / GlobalBestRouteLength);
+
+                if (lastCity == BaseStation || city == BaseStation)
+                {
+                    newPheromone = 0;
+                }
+
+                PheromoneMatrix[lastCity, city] += newPheromone;
+                PheromoneMatrix[city, lastCity] += newPheromone;
             }
         }
     }

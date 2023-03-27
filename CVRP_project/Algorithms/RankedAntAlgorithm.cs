@@ -2,11 +2,11 @@
 
 namespace CVRP_project.Algorithms
 {
-    internal class RankedAntAlgorithm : BasicAntAlgorithm, IAlgorithm
+    internal class RankedAntAlgorithm : ElitistAntAlgorithm, IAlgorithm
     {
         private int RankingSize;
 
-        public RankedAntAlgorithm(ProblemInstance cities, int iterationsCount, int antsCount, double alpha, double beta, double evaporation, double pheromoneStrength, double overLimitPenaltyFactor, int rankingSize) : base(cities, iterationsCount, antsCount, alpha, beta, evaporation, pheromoneStrength, overLimitPenaltyFactor)
+        public RankedAntAlgorithm(ProblemInstance cities, int iterationsCount, int antsCount, double alpha, double beta, double evaporation, double pheromoneStrength, double overLimitPenaltyFactor, int elitistAntsCount, int rankingSize) : base(cities, iterationsCount, antsCount, alpha, beta, evaporation, pheromoneStrength, overLimitPenaltyFactor, elitistAntsCount)
         {
             RankingSize = rankingSize;
         }
@@ -20,17 +20,31 @@ namespace CVRP_project.Algorithms
 
             for (int rank = 0; rank < RankingSize; rank++)
             {
-                // TODO: daj feromon tylko jak dobra trasa?
+                if (!Ants[rank].RouteFinished())
+                    continue;
 
-                int lastCity = BaseStation;
-
-                foreach (int city in Ants[rank].GetRoute())
+                double pheromoneFactor = 1.0;
+                if (!Ants[rank].WithinTrucksLimit())
                 {
-                    double newPheromone = Cities.GetPheromone(lastCity, city) + (PheromoneStrength / Ants[rank].GetRouteLength());
-                    newPheromone *= (RankingSize - rank);
+                    pheromoneFactor = OverLimitPenaltyFactor;
+                }
 
-                    Cities.SetPheromone(lastCity, city, newPheromone);
-                    Cities.SetPheromone(city, lastCity, newPheromone);
+                var route = Ants[rank].GetRoute();
+
+                for (int i = 1; i < route.Count; ++i)
+                {
+                    int lastCity = route[i - 1];
+                    int city = route[i];
+
+                    double newPheromone = pheromoneFactor * (RankingSize - rank) * (PheromoneStrength / Ants[rank].GetRouteLength());
+
+                    if (lastCity == BaseStation || city == BaseStation)
+                    {
+                        newPheromone = 0;
+                    }
+
+                    PheromoneMatrix[lastCity, city] += newPheromone;
+                    PheromoneMatrix[city, lastCity] += newPheromone;
                 }
             }
 

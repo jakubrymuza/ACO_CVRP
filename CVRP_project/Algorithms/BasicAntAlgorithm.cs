@@ -12,12 +12,13 @@ namespace CVRP_project.Algorithms
 
         protected readonly Ant[] Ants;
 
+        protected readonly double[,] PheromoneMatrix;
 
         protected readonly double Alpha;
         protected readonly double Beta;
         protected readonly double Evaporation;
         protected readonly double PheromoneStrength;
-        protected readonly double OverLimitPenaltyFactor; // kara za zbyt dużą liczbę ciężarówek
+        protected readonly double OverLimitPenaltyFactor; // kara na feromon za zbyt dużą liczbę ciężarówek
 
         protected List<int> GlobalBestRoute = new List<int>();
         protected double GlobalBestRouteLength = double.MaxValue;
@@ -25,9 +26,11 @@ namespace CVRP_project.Algorithms
         protected List<int> LocalBestRoute = new List<int>();
         protected double LocalBestRouteLength = double.MaxValue;
 
+        public virtual String Name() => "Basic Ant Algorithm";
+
         public BasicAntAlgorithm(ProblemInstance cities, int iterationsCount, int antsCount, double alpha, double beta, double evaporation, double pheromoneStrength, double overLimitPenaltyFactor)
         {
-            this.Cities = cities;
+            Cities = cities;
             IterationsCount = iterationsCount;
 
             Ants = new Ant[antsCount];
@@ -45,42 +48,41 @@ namespace CVRP_project.Algorithms
             PheromoneStrength = pheromoneStrength;
             OverLimitPenaltyFactor = overLimitPenaltyFactor;
 
+            PheromoneMatrix = new double[Cities.Size, Cities.Size];
+
             RandomGenerator = new Random();
+
+            Reset();
         }
 
         public void Reset()
         {
-            GlobalBestRoute = new List<int>();
+            GlobalBestRoute.Clear();
             GlobalBestRouteLength = double.MaxValue;
 
-            LocalBestRoute = new List<int>();
+            LocalBestRoute.Clear();
             LocalBestRouteLength = double.MaxValue;
         }
-
-        public virtual String Name() => "Basic Ant Algorithm";
-
 
         public (List<int> route, double routeLength) Solve(int seed)
         {
             RandomGenerator = new Random(seed);
 
-            Cities.ResetPheromone();
+            ResetPheromone();
 
             for (int i = 0; i < IterationsCount; i++)
             {
                 ResetAnts();
-
-                // najlepsza ścieżka w danej iteracji
-
+                ResetLocalBestRoute();
 
                 for (int j = 0; j < Ants.Length; j++)
                 {
-                    SolveAnt(Ants[j]);
+                    SolveAnt(Ants[j], j);
                 }
 
-                UpdateLocalBestRoute(ref LocalBestRoute, ref LocalBestRouteLength, Ants);
+                UpdateLocalBestRoute();
 
-                UpdateGlobalBestRoute(LocalBestRoute, LocalBestRouteLength);
+                UpdateGlobalBestRoute();
 
                 UpdatePheromone();
             }
@@ -88,15 +90,15 @@ namespace CVRP_project.Algorithms
             return (GlobalBestRoute, GlobalBestRouteLength);
         }
 
-
-
-        protected void SolveAnt(Ant ant)
+        protected void SolveAnt(Ant ant, int startCity)
         {
-            int startCity = RandomGenerator.Next(Cities.Size - 1) + 1;
+            if(startCity >= Cities.Size)
+                startCity = RandomGenerator.Next(Cities.Size - 1) + 1;
+
             ant.Visit(BaseStation);
             ant.Visit(startCity);
 
-            while (!ant.RouteFinished()) // TODO: check if surpassed trucks limit?
+            while (!ant.RouteFinished())
             {
                 int lastCity = ant.GetLastCity();
 
@@ -108,7 +110,7 @@ namespace CVRP_project.Algorithms
                 ant.Visit(nextCity);
             }
 
-            if(!ant.RouteFinished())
+            if (!ant.RouteFinished())
             {
                 ant.InvalidateResult();
             }
@@ -137,14 +139,12 @@ namespace CVRP_project.Algorithms
                 }
                 else
                 {
-                    probabilities[city] = Math.Pow(Cities.GetPheromone(lastCity, city), Alpha) *
-                                       Math.Pow(1.0 / Cities.GetDistance(lastCity, city), Beta);
+                    probabilities[city] = CalculateProbability(lastCity, city);
 
                     sum += probabilities[city];
                 }
             }
 
-            // normalizacja prawdopobieństw do 1
             for (int i = 0; i < Cities.Size; i++)
             {
                 probabilities[i] /= sum;
@@ -152,6 +152,11 @@ namespace CVRP_project.Algorithms
 
             return probabilities;
         }
+
+        protected virtual double CalculateProbability(int lastCity, int city) => 
+            Math.Pow(PheromoneMatrix[lastCity, city], Alpha) *
+                               Math.Pow(1.0 / Cities.GetDistance(lastCity, city), Beta);
+
 
         protected int RunRoulette(double[] probabilities)
         {
@@ -183,8 +188,7 @@ namespace CVRP_project.Algorithms
             {
                 for (int j = 0; j < Cities.Size; j++)
                 {
-                    double newPheromone = Cities.GetPheromone(i, j) * (1.0 - Evaporation);
-                    Cities.SetPheromone(i, j, newPheromone);
+                    PheromoneMatrix[i, j] *= (1.0 - Evaporation);
                 }
 
             }
@@ -194,20 +198,31 @@ namespace CVRP_project.Algorithms
         {
             foreach (Ant ant in Ants)
             {
+                if (!ant.RouteFinished())
+                    continue;
+
+
                 double pheromoneFactor = 1.0;
-                if(!ant.WithinTrucksLimit())
+                if (!ant.WithinTrucksLimit())
                 {
                     pheromoneFactor = OverLimitPenaltyFactor;
                 }
 
-                int lastCity = BaseStation;
-
-                foreach (int city in ant.GetRoute())
+                var route = ant.GetRoute();
+                for (int i = 1; i < route.Count; ++i)
                 {
-                    double newPheromone = Cities.GetPheromone(lastCity, city) + (PheromoneStrength / ant.GetRouteLength());
-                    newPheromone *= pheromoneFactor;
-                    Cities.SetPheromone(lastCity, city, newPheromone);
-                    Cities.SetPheromone(city, lastCity, newPheromone);
+                    int lastCity = route[i - 1];
+                    int city = route[i];
+
+                    double newPheromone = pheromoneFactor * (PheromoneStrength / ant.GetRouteLength());
+
+                    if (lastCity == BaseStation || city == BaseStation)
+                    {
+                        newPheromone *= 0;
+                    }
+
+                    PheromoneMatrix[lastCity, city] += newPheromone;
+                    PheromoneMatrix[city, lastCity] += newPheromone;
                 }
             }
 
@@ -215,6 +230,31 @@ namespace CVRP_project.Algorithms
         }
 
         protected virtual void PostAddNewPheromone() { } // placeholder for modifications
+
+        private void UpdateLocalBestRoute()
+        {
+            foreach (Ant ant in Ants)
+            {
+                if (ant.WithinTrucksLimit() && ant.RouteFinished())
+                {
+                    if (ant.GetRouteLength() < LocalBestRouteLength)
+                    {
+                        LocalBestRoute = new List<int>(ant.GetRoute());
+                        LocalBestRouteLength = ant.GetRouteLength();
+                    }
+                }
+            }
+
+        }
+
+        private void UpdateGlobalBestRoute()
+        {
+            if (LocalBestRouteLength < GlobalBestRouteLength)
+            {
+                GlobalBestRoute = new List<int>(LocalBestRoute);
+                GlobalBestRouteLength = LocalBestRouteLength;
+            }
+        }
 
         private void ResetAnts()
         {
@@ -224,28 +264,20 @@ namespace CVRP_project.Algorithms
             }
         }
 
-        private void UpdateLocalBestRoute(ref List<int> LocalBestRoute, ref double LocalBestRouteLength, Ant[] ants)
+        private void ResetLocalBestRoute()
         {
-            foreach (Ant ant in ants)
-            {
-                if (ant.RouteFinished() && ant.WithinTrucksLimit())
-                {
-                    if (ant.GetRouteLength() < LocalBestRouteLength)
-                    {
-                        LocalBestRoute = ant.GetRoute();
-                        LocalBestRouteLength = ant.GetRouteLength();
-                    }
-                }
-            }
-
+            LocalBestRoute.Clear();
+            LocalBestRouteLength = double.MaxValue;
         }
 
-        private void UpdateGlobalBestRoute(List<int> LocalBestRoute, double LocalBestRouteLength)
+        public void ResetPheromone()
         {
-            if (LocalBestRouteLength < GlobalBestRouteLength)
+            for (int i = 0; i < Cities.Size; i++)
             {
-                GlobalBestRoute = LocalBestRoute;
-                GlobalBestRouteLength = LocalBestRouteLength;
+                for (int j = 0; j < Cities.Size; j++)
+                {
+                    PheromoneMatrix[i, j] = 1.0;
+                }
             }
         }
     }

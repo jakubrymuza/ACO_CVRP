@@ -3,7 +3,6 @@
     internal class ProblemInstance
     {
         private readonly double[,] ProximityMatrix;
-        private readonly double[,] PheromoneMatrix;
         private readonly double[] Demands;
 
         public int Size { get; private set; }
@@ -13,25 +12,7 @@
 
         public double GetDistance(int a, int b) => ProximityMatrix[a, b];
 
-        public double GetPheromone(int a, int b) => PheromoneMatrix[a, b];
-
-        public void SetPheromone(int a, int b, double val)
-        {
-            PheromoneMatrix[a, b] = val;
-        }
-
         public double GetDemand(int a) => Demands[a];
-
-        public void ResetPheromone()
-        {
-            for (int i = 0; i < Size; i++)
-            {
-                for (int j = 0; j < Size; j++)
-                {
-                    PheromoneMatrix[i, j] = 1.0;
-                }
-            }
-        }
 
         // schemat pliku: w pierwszej linijce size, capacity, maxDistance i trucksLimit
         // w następnych size linijkach: współrzędne x,y klientów (stacja bazowa pierwsza)
@@ -44,11 +25,8 @@
             ReadParametres(lines);
 
             ProximityMatrix = new double[Size, Size];
-            PheromoneMatrix = new double[Size, Size];
+
             Demands = new double[Size];
-
-            ResetPheromone();
-
 
             var positions = ReadCoordinates(lines);
 

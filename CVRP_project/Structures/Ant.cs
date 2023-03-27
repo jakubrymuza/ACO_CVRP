@@ -53,14 +53,12 @@
             {
                 CapacityLeft = Cities.Capacity;
                 DistanceLeft = Cities.MaxDistance;
-                Visited[city] = true;
                 TrucksUsed++;
             }
             else
             {
                 CapacityLeft -= Cities.GetDemand(city);
-                DistanceLeft -= Cities.GetDistance(GetLastCity(), city);
-                Visited[city] = true;
+                DistanceLeft -= Cities.GetDistance(lastCity, city);
                 VisitedCount++;
             }
 
@@ -74,9 +72,9 @@
 
         public double GetRouteLength() => RouteLength;
 
-        public bool RouteFinished() => GetLastCity() == BaseStation && VisitedCount == Cities.Size;
+        public bool RouteFinished() => (GetLastCity() == BaseStation) && (VisitedCount == Cities.Size);
 
-        public bool WithinTrucksLimit() => TrucksUsed <= Cities.TrucksLimit;
+        public bool WithinTrucksLimit() => (TrucksUsed <= Cities.TrucksLimit);
 
         public int GetLastCity() => Route.Count > 0 ? Route.Last() : -1;
 

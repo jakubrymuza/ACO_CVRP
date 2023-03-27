@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CVRP_project": {
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\Users\\Jakub Rymuza\\Downloads\\test1.txt\" 300"
+    }
+  }
+}
